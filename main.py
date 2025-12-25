@@ -74,19 +74,59 @@ def get_user_by_email(email):
         return result.data[0]
     return None
 
-def insert_lead(user_id, phone, name, message):
+def insert_lead(user_id, name, message, conversation_id):
     supabase.table("leads").insert({
         "user_id": user_id,
-        "phone": phone,
         "name": name, 
         "message": message,
+        "conversation_id": conversation_id,
         "timestamp": datetime.utcnow().isoformat(),
         "handled": 0
     }).execute()
 
+def get_inbox(user_id):
+    result = supabase.rpc("get_latest_conversations", {
+        "uid": user_id
+    }).execute()
+    return result.data or []
+
 def get_leads(user_id):
     result = supabase.table("leads").select("*").eq("user_id", user_id).order("id", desc=True).execute() 
     return result.data or []
+
+# ---- CHAT HELPERS ----
+
+def create_chat(admin_id, guest_name):
+    res = supabase.table("chats").insert({
+        "admin_id": admin_id,
+        "guest_name": guest_name,
+        "status": "open"
+    }).execute()
+
+    return res.data[0]
+
+def get_chat(chat_id):
+    res = supabase.table("chats") \
+        .select("*") \
+        .eq("id", chat_id) \
+        .single() \
+        .execute()
+    return res.data
+
+def add_message(chat_id, sender, message):
+    supabase.table("messages").insert({
+        "chat_id": chat_id,
+        "sender": sender,
+        "message": message,
+    }).execute()
+
+def get_messages(chat_id):
+    res = supabase.table("messages") \
+        .select("*") \
+        .eq("chat_id", chat_id) \
+        .order("created_at") \
+        .execute()
+    return res.data or []
 
 # ---- WHATSAPP WEBHOOK ----
 
@@ -172,6 +212,10 @@ def send_whatsapp_text(to_phone, text):
     except Exception as e:
         print("Send WhatsApp message error:", e)
 
+
+
+
+
 # ---- AUTH PAGES ----
 
 @app.route("/")
@@ -227,6 +271,70 @@ def dashboard():
     user_id = session["user_id"]
     leads = get_leads(user_id)
     return render_template("dashboard.html", leads=leads, total=len(leads))
+
+@app.route("/new-chat", methods=["POST"])
+def new_chat():
+    if "user_id" not in session:
+        return redirect("/login")
+    guest_name = request.form.get("guest_name")
+    chat = create_chat(session["user_id"], guest_name)
+
+    return redirect(f"/c/{chat['id']}")
+
+@app.route("/c/<chat_id>", methods=["GET", "POST"])
+def public_chat(chat_id):
+    chat = get_chat(chat_id)
+    if not chat:
+        return "Chat not found", 404
+    
+    # Determine role
+    is_admin = session.get("user_id") == chat["admin_id"]
+    is_guest = session.get("chat_id") == chat_id
+
+    if request.method == "POST":
+        msg = request.form.get("message")
+
+        if not msg:
+            return redirect(request.url)
+        
+        if is_admin:
+            sender = "admin"
+        elif is_guest:
+            sender = "guest"
+        else:
+            return "Unauthorized", 403
+        
+        add_message(chat_id, sender, msg)
+
+        return redirect(request.url)
+    
+    messages = get_messages(chat_id)
+
+    return render_template(
+        "public_chat.html",
+        chat=chat,
+        messages=messages,
+        is_admin=is_admin,
+        is_guest=is_guest,
+    )
+
+@app.route("/start/<int:admin_id>", methods=["GET", "POST"])
+def start_chat(admin_id):
+    if request.method == "POST":
+        guest_name = request.form.get("guest_name")
+
+        if not guest_name:
+            return "Name required", 400
+        
+        chat = create_chat(admin_id, guest_name)
+
+        # Store guest identity in session
+        session["guest_name"] = guest_name
+        session["chat_id"] = chat["id"]
+
+        return redirect(f"/c/{chat['id']}")
+    
+    return render_template("start_chat.html", admin_id=admin_id)
 
 @app.route("/export")
 def export():

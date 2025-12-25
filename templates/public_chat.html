@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <link rel="stylesheet" href="/static/main.css">
+    <style>
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #add;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #fafafa;
+        }
+        .msg {
+            margin-bottom: 8px;
+        }
+        .msg b {
+            color: #2b8be6;
+        }
+        .msg.admin b {
+            color: #0a7d2e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Chat with {{ chat.guest_name }}</h2>
+
+        <div class="chat-box">
+            {% for m in messages %}
+                <div class="msg {{ m.sender }}">
+                    <b>{{ m.sender }}:</b> {{ m.message }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <form method="post">
+            <input 
+                type="text"
+                name="message"
+                placeholder="Type your message..."
+                required
+            />
+            <button class="btn" type="submit">Send</button>
+        </form>
+
+        {% if is_admin %}
+            <p><small>You are logged in as <b>Admin</b></small></p>
+        {% elif is_guest %}
+            <p><small>You are chatting as <b>Guest</b></small></p>
+        {% endif %}
+    </div>
+</body>
+</html>
