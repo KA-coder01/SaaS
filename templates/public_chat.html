@@ -53,6 +53,28 @@
         }
 
         setInterval(fetchNewMessages, 2000);
+
+        const form = document.getElementById("chatForm");
+        const input = document.getElementById("messageInput");
+
+        form.addEventListener("submit", async function (e) {
+            e.preventDefault(); // STOP PAGE RELOAD
+
+            const text = input.value.trim();
+            if (!text) return;
+            
+            await fetch(window.location.pathname, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                    message: text
+                })
+            });
+
+            input.value = ""; // cleSar input
+        });
     </script>
 </head>
 <body>
@@ -67,9 +89,10 @@
             {% endfor %}
         </div>
 
-        <form method="post">
+        <form id="chatForm">
             <input 
                 type="text"
+                id="messageInput"
                 name="message"
                 placeholder="Type your message..."
                 required
