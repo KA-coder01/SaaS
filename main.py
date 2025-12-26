@@ -128,6 +128,21 @@ def get_messages(chat_id):
         .execute()
     return res.data or []
 
+@app.route("/api/messages/<chat_id>")
+def fetch_messages(chat_id):
+    since = request.args.get("since")   # timestamp from browser
+
+    query = supabase.table("messages") \
+        .select("*") \
+        .eq("chat_id", chat_id) \
+        .order("created_at")
+    
+    if since:
+        query = query.gt("created_at", since)
+
+    res = query.execute()
+    return res.data or []
+
 # ---- WHATSAPP WEBHOOK ----
 
 @app.route("/webhook", methods=["GET", "POST"])
