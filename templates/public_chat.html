@@ -28,9 +28,9 @@
         let lastSeen = null;
 
         async function fetchNewMessages() {
-            let url = '/api/messages/${chatId}';
+            let url = '/api/messages/${chatID}';
             if (lastSeen) {
-                url += '?since=${encodeURLComponent(lastSeen)}';
+                url += `?since=${encodeURIComponent(lastSeen)}`;
             }
 
             const res = await fetch(url);
@@ -42,7 +42,7 @@
                 messages.forEach(msg => {
                     const div = document.createElement("div");
                     div.className = "msg " + msg.sender;
-                    div.innerHTML = '<b>${msg.sender}:</b> ${msg.message}';
+                    div.innerHTML = `<b>${msg.sender}:</b> ${msg.message}`;
                     chatBox.appendChild(div);
 
                     lastSeen = msg.created_at;
