@@ -28,7 +28,7 @@
         let lastSeen = null;
 
         async function fetchNewMessages() {
-            let url = '/api/messages/${chatID}';
+            let url = `/api/messages/${chatID}`;
             if (lastSeen) {
                 url += `?since=${encodeURIComponent(lastSeen)}`;
             }
