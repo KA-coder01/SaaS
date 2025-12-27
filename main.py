@@ -120,6 +120,7 @@ def add_message(chat_id, sender, message):
         "message": message,
     }).execute()
 
+
 def get_messages(chat_id):
     res = supabase.table("messages") \
         .select("*") \
@@ -321,7 +322,7 @@ def public_chat(chat_id):
         
         add_message(chat_id, sender, msg)
 
-        return redirect(request.url)
+        return "", 204
     
     messages = get_messages(chat_id)
 
