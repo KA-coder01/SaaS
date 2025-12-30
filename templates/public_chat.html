@@ -23,11 +23,21 @@
             color: #0a7d2e;
         }
     </style>
+
     <script>
         document.addEventListener("DOMContentLoaded", () => {
 
             const chatID = "{{ chat.id }}";
+            const chatBox = document.getElementById("chatBox");
             let lastSeen = null;
+
+            // initialize lastSeen from last rendered message
+            const renderedMessages = chatBox.children;
+            if (renderedMessages.length > 0) {
+                lastSeen = renderedMessages[renderedMessages.length - 1]
+                    .getAttribute("data-ts");
+            }
+
             
             async function fetchNewMessages() {
                 let url =  `/api/messages/$(chatID)`;
@@ -39,15 +49,14 @@
                 const messages = await res.json();
 
                 if (messages.lenght > 0) {
-                    const div = document.getElementById("chatBox");
 
                     messages.forEach(msg => {
-                        const div = document.createElement("div");
-                        div.className = "msg" + msg.sender;
-                        div.innerHTML = `<b>${msg.sender}:</b> ${msg.message}`;
-                        chatBox.appendchild(div);
-
-                        lastSeen = msg.create_at;
+                        const msgDiv = document.createElement("div");
+                        msgDiv.className = "msg" + msg.sender;
+                        msgDiv.setAttribute("data-ts", msg.created_at);
+                        msgDiv.innerHTML = `<b>${msg.sender}:</b> ${msg.message}`;
+                        chatBox.appendChild(msgDiv);
+                        lastSeen = msg.created_at;
                     });
 
                     chatBox.scrollTop = chatBox.scrollHeight;
@@ -68,7 +77,7 @@
                 await fetch(window.location.pathname, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Content-Type": "application/x-www-form-urlencoded"
                     },
                     body: new URLSearchParams({ message: text })
                 });
